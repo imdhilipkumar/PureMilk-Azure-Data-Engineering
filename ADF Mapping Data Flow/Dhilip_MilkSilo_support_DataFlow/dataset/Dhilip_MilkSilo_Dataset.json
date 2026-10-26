@@ -1,0 +1,20 @@
+{
+    "name": "Dhilip_MilkSilo_Dataset",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "AzureBlobStorage1",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "Json",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "folderPath": "Dhilip_Projects/Smart Dairy Milk Silo/bronze",
+                "container": "ivydeaug"
+            }
+        },
+        "schema": {}
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

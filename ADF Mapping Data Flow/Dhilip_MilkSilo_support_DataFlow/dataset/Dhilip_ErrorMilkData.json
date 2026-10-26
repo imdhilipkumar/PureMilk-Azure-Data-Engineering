@@ -1,0 +1,21 @@
+{
+    "name": "Dhilip_ErrorMilkData",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "AzureBlobStorage1",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "folderPath": "Dhilip_Projects/Smart Dairy Milk Silo/Rejected",
+                "container": "ivydeaug"
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}
