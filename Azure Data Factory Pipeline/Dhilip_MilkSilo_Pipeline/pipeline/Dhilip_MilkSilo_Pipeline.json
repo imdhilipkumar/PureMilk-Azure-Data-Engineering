@@ -1,0 +1,608 @@
+{
+    "name": "Dhilip_MilkSilo_Pipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "SetBatchEnd",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "VBatchEnd",
+                    "value": {
+                        "value": "@convertFromUtc(\n    pipeline().TriggerTime,\n    'India Standard Time'\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "LkMilkSilo",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "SetBatchEnd",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": {
+                            "value": "SELECT last_processed_time\nFROM dbo.Dhilip_watermark_MilkSilo\nWHERE source_name = 'MILK_SILO';",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "dataset": {
+                        "referenceName": "Dhilip_MilkSilo_WaterMark",
+                        "type": "DatasetReference"
+                    }
+                }
+            },
+            {
+                "name": "SetMaxTimeMilkSilo",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "LkMilkSilo",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "VMaxTime",
+                    "value": {
+                        "value": "@if(\n    empty(string(activity('LkMilkSilo').output.firstRow.last_processed_time)),\n    '1900-01-01T00:00:00',\n    string(activity('LkMilkSilo').output.firstRow.last_processed_time)\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "GmMilkSilo",
+                "type": "GetMetadata",
+                "dependsOn": [
+                    {
+                        "activity": "SetMaxTimeMilkSilo",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "Dhilip_DsMilkSilo",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "p_folder": "Dhilip_Projects/Smart Dairy Milk Silo/bronze",
+                            "p_file": {
+                                "value": "@''",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "fieldList": [
+                        "childItems"
+                    ],
+                    "storeSettings": {
+                        "type": "AzureBlobStorageReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "BinaryReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "FilterMilkSilo",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "GmMilkSilo",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@if(\n    equals(activity('GmMilkSilo').status,'Succeeded'),\n    coalesce(activity('GmMilkSilo').output.childItems,json('[]')),\n    json('[]')\n)",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@if(\n    startsWith(item().name,'milksilo_'),\n    and(\n        greater(\n            ticks(\n                concat(\n                    substring(split(item().name,'_')[1],0,4),'-',\n                    substring(split(item().name,'_')[1],4,2),'-',\n                    substring(split(item().name,'_')[1],6,2),'T',\n                    substring(split(item().name,'_')[2],0,2),':',\n                    substring(split(item().name,'_')[2],2,2),':00'\n                )\n            ),\n            ticks(activity('LkMilkSilo').output.firstRow.last_processed_time)\n        ),\n        lessOrEquals(\n            ticks(\n                concat(\n                    substring(split(item().name,'_')[1],0,4),'-',\n                    substring(split(item().name,'_')[1],4,2),'-',\n                    substring(split(item().name,'_')[1],6,2),'T',\n                    substring(split(item().name,'_')[2],0,2),':',\n                    substring(split(item().name,'_')[2],2,2),':00'\n                )\n            ),\n            ticks(variables('VBatchEnd'))\n        )\n    ),\n    false\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "FEMilkSilo",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "FilterMilkSilo",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('FilterMilkSilo').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "IFMIlkSilo",
+                            "type": "IfCondition",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@greater(\n    ticks(\n        concat(\n            substring(split(item().name,'_')[1],0,4),'-',\n            substring(split(item().name,'_')[1],4,2),'-',\n            substring(split(item().name,'_')[1],6,2),'T',\n            substring(split(item().name,'_')[2],0,2),':',\n            substring(split(item().name,'_')[2],2,2),':00'\n            )\n        ),\n    ticks(variables('VMaxTime'))\n)",
+                                    "type": "Expression"
+                                },
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "SetMaxTimeMilkSilo2",
+                                        "type": "SetVariable",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "VMaxTime",
+                                            "value": {
+                                                "value": "@concat(\n    substring(split(item().name,'_')[1],0,4),'-',\n    substring(split(item().name,'_')[1],4,2),'-',\n    substring(split(item().name,'_')[1],6,2),'T',\n    substring(split(item().name,'_')[2],0,2),':',\n    substring(split(item().name,'_')[2],2,2),':00'\n)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "IfHasData",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "FEMilkSilo",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@not(\n    empty(\n        activity('FilterMilkSilo').output.value\n    )\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "DfMilkSilo",
+                "type": "ExecuteDataFlow",
+                "dependsOn": [
+                    {
+                        "activity": "IfHasData",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataflow": {
+                        "referenceName": "Dhilip_MilkSilo",
+                        "type": "DataFlowReference",
+                        "parameters": {
+                            "PBatchEnd": {
+                                "value": "'@{string(variables('VBatchEnd'))}'",
+                                "type": "Expression"
+                            },
+                            "PMaxTime": {
+                                "value": "'@{string(activity('LkMilkSilo').output.firstRow.last_processed_time)}'",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "compute": {
+                        "coreCount": 8,
+                        "computeType": "General"
+                    },
+                    "traceLevel": "Fine"
+                }
+            },
+            {
+                "name": "CpyToSQL",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "DfMilkSilo",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "ParquetSource",
+                        "storeSettings": {
+                            "type": "AzureBlobStorageReadSettings",
+                            "recursive": true,
+                            "wildcardFolderPath": "Dhilip_Projects/Smart Dairy Milk Silo/Gold",
+                            "wildcardFileName": "*.parquet",
+                            "enablePartitionDiscovery": false
+                        },
+                        "formatSettings": {
+                            "type": "ParquetReadSettings"
+                        }
+                    },
+                    "sink": {
+                        "type": "AzureSqlSink",
+                        "writeBehavior": "upsert",
+                        "upsertSettings": {
+                            "useTempDB": true,
+                            "keys": [
+                                "sample_id"
+                            ]
+                        },
+                        "sqlWriterUseTableLock": false,
+                        "disableMetricsCollection": false
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "mappings": [
+                            {
+                                "source": {
+                                    "name": "sample_id",
+                                    "type": "String",
+                                    "physicalType": "UTF8"
+                                },
+                                "sink": {
+                                    "name": "sample_id",
+                                    "type": "String",
+                                    "physicalType": "varchar"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "sample_timestamp",
+                                    "type": "DateTime",
+                                    "physicalType": "INT96"
+                                },
+                                "sink": {
+                                    "name": "sample_timestamp",
+                                    "type": "DateTime",
+                                    "physicalType": "datetime2"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "silo_id",
+                                    "type": "String",
+                                    "physicalType": "UTF8"
+                                },
+                                "sink": {
+                                    "name": "silo_id",
+                                    "type": "String",
+                                    "physicalType": "varchar"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "temperature_c",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "temperature_c",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 2,
+                                    "precision": 5
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "ph",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "ph",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 2,
+                                    "precision": 4
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "density",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "density",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 4,
+                                    "precision": 6
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "fat_pct",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "fat_pct",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 2,
+                                    "precision": 5
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "freezing_point_c",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "freezing_point_c",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 3,
+                                    "precision": 6
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "mb_rt_minutes",
+                                    "type": "Int64",
+                                    "physicalType": "INT64"
+                                },
+                                "sink": {
+                                    "name": "mb_rt_minutes",
+                                    "type": "Int32",
+                                    "physicalType": "int"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "protein_pct",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "protein_pct",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 2,
+                                    "precision": 5
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "snf_pct",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "snf_pct",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 2,
+                                    "precision": 5
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "titratable_acidity_pct",
+                                    "type": "Double",
+                                    "physicalType": "DOUBLE"
+                                },
+                                "sink": {
+                                    "name": "titratable_acidity_pct",
+                                    "type": "Decimal",
+                                    "physicalType": "decimal",
+                                    "scale": 2,
+                                    "precision": 5
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "coliform_count_cfu_ml",
+                                    "type": "Int64",
+                                    "physicalType": "INT64"
+                                },
+                                "sink": {
+                                    "name": "coliform_count_cfu_ml",
+                                    "type": "Int32",
+                                    "physicalType": "int"
+                                }
+                            },
+                            {
+                                "source": {
+                                    "name": "total_plate_count_cfu_ml",
+                                    "type": "Int64",
+                                    "physicalType": "INT64"
+                                },
+                                "sink": {
+                                    "name": "total_plate_count_cfu_ml",
+                                    "type": "Int32",
+                                    "physicalType": "int"
+                                }
+                            }
+                        ],
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "Dhilip_SinkMilkFinalData",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "Dhilip_Sink_MilkSiloFinalData",
+                        "type": "DatasetReference"
+                    }
+                ]
+            },
+            {
+                "name": "Sp_UpdatedMilkSilo",
+                "type": "SqlServerStoredProcedure",
+                "dependsOn": [
+                    {
+                        "activity": "CpyToSQL",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "storedProcedureName": "[dbo].[Dhilip_UpdateMilkSiloWatermark]",
+                    "storedProcedureParameters": {
+                        "last_processed_time": {
+                            "value": {
+                                "value": "@variables('VMaxTime')",
+                                "type": "Expression"
+                            },
+                            "type": "DateTime"
+                        },
+                        "source_name": {
+                            "value": "MILK_SILO",
+                            "type": "String"
+                        }
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "AzureSqlDatabase1",
+                    "type": "LinkedServiceReference"
+                }
+            },
+            {
+                "name": "DltMilkSilo",
+                "type": "Delete",
+                "dependsOn": [
+                    {
+                        "activity": "Sp_UpdatedMilkSilo",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "DltMilkSilo",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "d_folder": "Dhilip_Projects/Smart Dairy Milk Silo/bronze"
+                        }
+                    },
+                    "enableLogging": false,
+                    "storeSettings": {
+                        "type": "AzureBlobStorageReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "D_Tigger": {
+                "type": "string"
+            }
+        },
+        "variables": {
+            "VBatchEnd": {
+                "type": "String"
+            },
+            "VMaxTime": {
+                "type": "String"
+            }
+        },
+        "annotations": [],
+        "lastPublishTime": "2026-10-14T14:11:10Z"
+    },
+    "type": "Microsoft.DataFactory/factories/pipelines"
+}

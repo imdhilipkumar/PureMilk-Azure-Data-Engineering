@@ -1,0 +1,34 @@
+{
+    "name": "Dhilip_DsMilkSilo",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "AzureBlobStorage1",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "p_folder": {
+                "type": "string"
+            },
+            "p_file": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "Binary",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "fileName": {
+                    "value": "@dataset().p_file",
+                    "type": "Expression"
+                },
+                "folderPath": {
+                    "value": "@dataset().p_folder",
+                    "type": "Expression"
+                },
+                "container": "ivydeaug"
+            }
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

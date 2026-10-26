@@ -1,0 +1,7 @@
+selected resource name:		Dhilip_MilkSilo_Pipeline
+selected resource type:		pipeline
+factory name:			ivydeaug
+factory location:		centralindia
+subscription id:		61a71328-015b-44d9-a184-0b1396a4a7c1
+data flow session id:		8baccf06-e69a-4cd4-bc8d-12220162814d
+time of download (UTC):		Fri, 16 Oct 2026 03:49:24 GMT

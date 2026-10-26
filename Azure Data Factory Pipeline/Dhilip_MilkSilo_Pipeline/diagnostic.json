@@ -1,0 +1,24 @@
+{
+    "now": "2026-10-16T03:49:24.099Z",
+    "perfNow": 4021427.200000003,
+    "diagnosticCorrelation": "07bac073-d82b-463f-b9da-52287a4497b6",
+    "source": "DownloadSupportFiles",
+    "environment": {
+        "productName": "adf",
+        "buildVersion": "1.0.092826.2",
+        "environmentType": 3,
+        "resourceName": "ivydeaug",
+        "resourceRegion": "centralindia",
+        "resourceGroup": "IVY-DE-AUG-2026",
+        "subscriptionId": "61a71328-015b-44d9-a184-0b1396a4a7c1",
+        "sessionId": "KyBS4dF+P9+RKTWpM4pqZi",
+        "operationId": "",
+        "gitType": "live",
+        "loggingKey": "9440aef3-724b-4440-81b0-4c87532e43f3"
+    },
+    "additionalInfo": {
+        "selectedResource": "Dhilip_MilkSilo_Pipeline",
+        "selectedResourceType": "pipeline",
+        "dataFlowSessionId": "8baccf06-e69a-4cd4-bc8d-12220162814d"
+    }
+}

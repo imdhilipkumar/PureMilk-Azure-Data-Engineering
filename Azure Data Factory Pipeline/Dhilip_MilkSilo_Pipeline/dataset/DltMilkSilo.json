@@ -1,0 +1,27 @@
+{
+    "name": "DltMilkSilo",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "AzureBlobStorage1",
+            "type": "LinkedServiceReference"
+        },
+        "parameters": {
+            "d_folder": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "Binary",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobStorageLocation",
+                "folderPath": {
+                    "value": "@dataset().d_folder",
+                    "type": "Expression"
+                },
+                "container": "ivydeaug"
+            }
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,94 @@
+{
+    "name": "Dhilip_Sink_MilkSiloFinalData",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "AzureSqlDatabase1",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "AzureSqlTable",
+        "schema": [
+            {
+                "name": "sample_id",
+                "type": "varchar"
+            },
+            {
+                "name": "sample_timestamp",
+                "type": "datetime2",
+                "scale": 7
+            },
+            {
+                "name": "silo_id",
+                "type": "varchar"
+            },
+            {
+                "name": "temperature_c",
+                "type": "decimal",
+                "precision": 5,
+                "scale": 2
+            },
+            {
+                "name": "ph",
+                "type": "decimal",
+                "precision": 4,
+                "scale": 2
+            },
+            {
+                "name": "density",
+                "type": "decimal",
+                "precision": 6,
+                "scale": 4
+            },
+            {
+                "name": "fat_pct",
+                "type": "decimal",
+                "precision": 5,
+                "scale": 2
+            },
+            {
+                "name": "freezing_point_c",
+                "type": "decimal",
+                "precision": 6,
+                "scale": 3
+            },
+            {
+                "name": "mb_rt_minutes",
+                "type": "int",
+                "precision": 10
+            },
+            {
+                "name": "protein_pct",
+                "type": "decimal",
+                "precision": 5,
+                "scale": 2
+            },
+            {
+                "name": "snf_pct",
+                "type": "decimal",
+                "precision": 5,
+                "scale": 2
+            },
+            {
+                "name": "titratable_acidity_pct",
+                "type": "decimal",
+                "precision": 5,
+                "scale": 2
+            },
+            {
+                "name": "coliform_count_cfu_ml",
+                "type": "int",
+                "precision": 10
+            },
+            {
+                "name": "total_plate_count_cfu_ml",
+                "type": "int",
+                "precision": 10
+            }
+        ],
+        "typeProperties": {
+            "schema": "dbo",
+            "table": "DhilipMilkSilo_GoldFinalData"
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

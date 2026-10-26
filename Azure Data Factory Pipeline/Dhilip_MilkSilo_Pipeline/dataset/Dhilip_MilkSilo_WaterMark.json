@@ -1,0 +1,27 @@
+{
+    "name": "Dhilip_MilkSilo_WaterMark",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "AzureSqlDatabase1",
+            "type": "LinkedServiceReference"
+        },
+        "annotations": [],
+        "type": "AzureSqlTable",
+        "schema": [
+            {
+                "name": "source_name",
+                "type": "varchar"
+            },
+            {
+                "name": "last_processed_time",
+                "type": "datetime2",
+                "scale": 7
+            }
+        ],
+        "typeProperties": {
+            "schema": "dbo",
+            "table": "Dhilip_watermark_MilkSilo"
+        }
+    },
+    "type": "Microsoft.DataFactory/factories/datasets"
+}

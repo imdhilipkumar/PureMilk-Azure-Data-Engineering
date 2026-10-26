@@ -1,0 +1,27 @@
+{
+    "name": "Dhilip_MilkSilo_Trigger",
+    "properties": {
+        "annotations": [],
+        "runtimeState": "Stopped",
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "Dhilip_MilkSilo_Pipeline",
+                    "type": "PipelineReference"
+                },
+                "parameters": {
+                    "D_Tigger": "'2026-10-06T00:00:00'"
+                }
+            }
+        ],
+        "type": "ScheduleTrigger",
+        "typeProperties": {
+            "recurrence": {
+                "frequency": "Minute",
+                "interval": 10,
+                "startTime": "2026-10-01T17:00:00",
+                "timeZone": "India Standard Time"
+            }
+        }
+    }
+}
